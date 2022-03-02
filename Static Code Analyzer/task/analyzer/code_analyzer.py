@@ -38,12 +38,31 @@ def s006(fn, num, line):
         print(f'{fn}: Line {num}: S006 More than two blank lines')
 
 
+def s007(fn, num, line):
+    exp1 = '(def|class)'
+    exp2 = '(def  |class  )'
+    if re.search(exp1, line) and re.search(exp2, line):
+        print(f'{fn}: Line {num}: S007 Too many spaces after def')
+
+
+def s008(fn, num, line):
+    exp = 'class\s+[A-Z][a-z]*[A-Z]?[a-z]*(\([A-Z][a-z]*[A-Z]?[a-z]*\))?:$'
+    if 'class' in line and not re.search(exp, line):
+        print(f'{fn}: Line {num}: S008 Class name should be written in CamelCase')
+
+
+def s009(fn, num, line):
+    exp = 'def\s+[a-z0-9_]+\('
+    if 'def ' in line and not re.search(exp, line):
+        print(f'{fn}: Line {num}: S009 Function name should be written in snake_case')
+
+
 def chk_file(fn):
     with open(fn, 'r') as file:
         global cnt_blank
         for i, line in enumerate(file):
             if line.strip():
-                for n in range(6):
+                for n in range(9):
                     s = f's00{n + 1}(fn, {i + 1}, line)'
                     eval(s)
                 cnt_blank = 0
