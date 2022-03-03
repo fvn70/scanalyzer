@@ -1,6 +1,9 @@
+import ast
+import _ast
 import os.path
 import re
 import sys
+from pprint import pprint
 
 
 def s001(fn, num, line):
@@ -57,12 +60,69 @@ def s009(fn, num, line):
         print(f'{fn}: Line {num}: S009 Function name should be written in snake_case')
 
 
+def s0010(fn, num, line):
+    exp = '[a-z0-9_]+$'
+    names = analyzer.names['arg_name']
+    for name in names:
+        if name[0] == num and not re.match(exp, name[1]):
+            print(f'{fn}: Line {num}: S010 Argument name should be written in snake_case')
+            break
+
+
+def s0011(fn, num, line):
+    exp = '[a-z0-9_]+$'
+    names = analyzer.names['var_name']
+    for name in names:
+        if name[0] == num and not re.match(exp, name[1]):
+            print(f'{fn}: Line {num}: S011 Variable should be written in snake_case')
+            break
+
+
+def s0012(fn, num, line):
+    exp = '(List|Set|Dict)'
+    names = analyzer.names['def_type']
+    for name in names:
+        if name[0] == num and re.search(exp, str(name[1])):
+            print(f'{fn}: Line {num}: S012 The default argument value is mutable')
+            break
+
+
+class Analizer(ast.NodeVisitor):
+    def __init__(self):
+        self.names = {'func': [], 'arg_name': [], 'def_type': [], 'var_name': []}
+
+    def visit_FunctionDef(self, node):
+        self.names["func"].append((node.lineno, node.name))
+        for el in node.args.args:
+            self.names["arg_name"].append((el.lineno, el.arg))
+        for el in node.args.defaults:
+            self.names["def_type"].append((el.lineno, type(el)))
+        self.generic_visit(node)
+
+    def visit_Assign(self, node):
+        for el in node.targets:
+            if isinstance(el, _ast.Attribute):
+                self.names["var_name"].append((el.lineno, el.attr))
+            if isinstance(el, _ast.Name):
+                self.names["var_name"].append((el.lineno, el.id))
+        self.generic_visit(node)
+
+    def report(self):
+        pprint(self.names)
+
+
 def chk_file(fn):
+    global analyzer
+    with open(fn, 'r') as file:
+        tree = ast.parse(file.read())
+        analyzer = Analizer()
+        analyzer.visit(tree)
+        # analyzer.report()
     with open(fn, 'r') as file:
         global cnt_blank
         for i, line in enumerate(file):
             if line.strip():
-                for n in range(9):
+                for n in range(12):
                     s = f's00{n + 1}(fn, {i + 1}, line)'
                     eval(s)
                 cnt_blank = 0
@@ -75,7 +135,6 @@ path = args[1]
 is_file = os.path.isfile(path)
 base = os.path.dirname(path) if is_file else path
 files = [os.path.split(path)[1]] if is_file else os.listdir(base)
-
 cnt_blank = 0
 
 for file in files:
